@@ -59,20 +59,23 @@ void TrafficLight::simulate() {
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
     std::random_device randomDevice;
-    std::uniform_int_distribution<int> uniformIntDistribution(1, 6);
+    std::uniform_int_distribution<int> uniformIntDistribution(4000, 6000);
+    auto duration = uniformIntDistribution(randomDevice);
     auto cycleTime = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> lastUpdated;
+    double elapsed;
     while (true) {
-        auto lastUpdated = std::chrono::system_clock::now();
-        auto elapsed = std::chrono::duration<double, std::milli>(lastUpdated - cycleTime).count();
-        auto dist = uniformIntDistribution(randomDevice);
-        if (elapsed >= dist) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        lastUpdated = std::chrono::system_clock::now();
+        elapsed = std::chrono::duration<double, std::milli>(lastUpdated - cycleTime).count();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (elapsed >= duration) {
             if (_currentPhase == TrafficLightPhase::red) {
                 _currentPhase = TrafficLightPhase::green;
             } else {
                 _currentPhase = TrafficLightPhase::red;
             }
             _messages.send(std::move(_currentPhase));
+            cycleTime = std::chrono::system_clock::now();
         }
 
     }
