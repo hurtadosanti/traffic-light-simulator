@@ -41,9 +41,7 @@ class TrafficLight:TrafficObject
 {
 public:
     // constructor / destructor
-    TrafficLight(){
-        _currentPhase = TrafficLightPhase::red;
-    }
+    TrafficLight();
     // getters / setters
 
     // typical behaviour methods

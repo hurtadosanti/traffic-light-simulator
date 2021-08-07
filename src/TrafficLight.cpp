@@ -23,37 +23,35 @@ template<typename T>
 void MessageQueue<T>::send(T &&msg) {
     std::lock_guard<std::mutex> uniqueLock(_mutex);
     // add vector to queue
-    std::cout << "   Message " << msg << " has been sent to the queue" << std::endl;
     _messages.push_back(std::move(msg));
     _conditionVariable.notify_one(); // notify client after pushing new Vehicle into vector
 }
 
-
-/* Implementation of class "TrafficLight" */
-
-/* 
-TrafficLight::TrafficLight()
-{
+TrafficLight::TrafficLight() {
     _currentPhase = TrafficLightPhase::red;
 }
 
-void TrafficLight::waitForGreen()
-{
-    // FP.5b : add the implementation of the method waitForGreen, in which an infinite while-loop 
+void TrafficLight::waitForGreen() {
+    // infinite while-loop
     // runs and repeatedly calls the receive function on the message queue. 
     // Once it receives TrafficLightPhase::green, the method returns.
+    while (true){
+        auto msg =_messages.receive();
+        if(msg==TrafficLightPhase::green){
+            return;
+        }
+    }
 }
 
-TrafficLightPhase TrafficLight::getCurrentPhase()
-{
+TrafficLightPhase TrafficLight::getCurrentPhase() {
     return _currentPhase;
 }
-*/
-void TrafficLight::simulate()
-{
+
+void TrafficLight::simulate() {
     // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class.
     threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
+
 // virtual function which is executed in a thread
 [[noreturn]] void TrafficLight::cycleThroughPhases() {
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
