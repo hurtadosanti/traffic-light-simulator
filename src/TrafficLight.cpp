@@ -22,8 +22,9 @@ T MessageQueue<T>::receive() {
 template<typename T>
 void MessageQueue<T>::send(T &&msg) {
     std::lock_guard<std::mutex> uniqueLock(_mutex);
+    _messages.clear();
     // add vector to queue
-    _messages.push_back(std::move(msg));
+    _messages.template emplace_back(msg);
     _conditionVariable.notify_one(); // notify client after pushing new Vehicle into vector
 }
 
@@ -67,7 +68,7 @@ void TrafficLight::simulate() {
     while (true) {
         lastUpdated = std::chrono::system_clock::now();
         elapsed = std::chrono::duration<double, std::milli>(lastUpdated - cycleTime).count();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         if (elapsed >= duration) {
             if (_currentPhase == TrafficLightPhase::red) {
                 _currentPhase = TrafficLightPhase::green;
