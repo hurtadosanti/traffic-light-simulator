@@ -2,24 +2,32 @@
 #include <random>
 #include "TrafficLight.h"
 
+
 /* Implementation of class "MessageQueue" */
 
-/* 
-template <typename T>
-T MessageQueue<T>::receive()
-{
-    // FP.5a : The method receive should use std::unique_lock<std::mutex> and _condition.wait() 
-    // to wait for and receive new messages and pull them from the queue using move semantics. 
-    // The received object should then be returned by the receive function. 
+
+template<typename T>
+T MessageQueue<T>::receive() {
+
+    std::unique_lock<std::mutex> uniqueLock(_mutex);
+    // pass unique lock to condition variable
+    _conditionVariable.wait(uniqueLock, [this] { return !_messages.empty(); });
+    // remove last vector element from queue
+    T msg = std::move(_messages.back());
+    _messages.pop_back();
+
+    return msg;
 }
 
-template <typename T>
-void MessageQueue<T>::send(T &&msg)
-{
-    // FP.4a : The method send should use the mechanisms std::lock_guard<std::mutex> 
-    // as well as _condition.notify_one() to add a new message to the queue and afterwards send a notification.
+template<typename T>
+void MessageQueue<T>::send(T &&msg) {
+    std::lock_guard<std::mutex> uniqueLock(_mutex);
+    // add vector to queue
+    std::cout << "   Message " << msg << " has been sent to the queue" << std::endl;
+    _messages.push_back(std::move(msg));
+    _conditionVariable.notify_one(); // notify client after pushing new Vehicle into vector
 }
-*/
+
 
 /* Implementation of class "TrafficLight" */
 
@@ -40,33 +48,33 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 {
     return _currentPhase;
 }
-
+*/
 void TrafficLight::simulate()
 {
-    // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class. 
+    // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread when the public method „simulate“ is called. To do this, use the thread queue in the base class.
+    threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
-*/
 // virtual function which is executed in a thread
-[[noreturn]] void TrafficLight::cycleThroughPhases()
-{
+[[noreturn]] void TrafficLight::cycleThroughPhases() {
     // FP.2a : Implement the function with an infinite loop that measures the time between two loop cycles 
     // and toggles the current phase of the traffic light between red and green and sends an update method 
     // to the message queue using move semantics. The cycle duration should be a random value between 4 and 6 seconds. 
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
     std::random_device randomDevice;
-    std::uniform_int_distribution<int> uniformIntDistribution(1,6);
+    std::uniform_int_distribution<int> uniformIntDistribution(1, 6);
     auto cycleTime = std::chrono::system_clock::now();
-    while (true){
+    while (true) {
         auto lastUpdated = std::chrono::system_clock::now();
-        auto elapsed = std::chrono::duration<double,std::milli>(lastUpdated-cycleTime).count();
-        auto dist=uniformIntDistribution(randomDevice);
-        if(elapsed>=dist){
+        auto elapsed = std::chrono::duration<double, std::milli>(lastUpdated - cycleTime).count();
+        auto dist = uniformIntDistribution(randomDevice);
+        if (elapsed >= dist) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            if(_currentPhase==TrafficLightPhase::red){
-                _currentPhase=TrafficLightPhase::green;
-            }else{
-                _currentPhase=TrafficLightPhase::red;
+            if (_currentPhase == TrafficLightPhase::red) {
+                _currentPhase = TrafficLightPhase::green;
+            } else {
+                _currentPhase = TrafficLightPhase::red;
             }
+            _messages.send(std::move(_currentPhase));
         }
 
     }
